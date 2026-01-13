@@ -1,0 +1,11 @@
+{
+  "preferences": [
+    {"course_id": "COURSE_01", "utility": 7},
+    {"course_id": "COURSE_02", "utility": 10},
+    {"course_id": "COURSE_03", "utility": 8},
+    {"course_id": "COURSE_06", "utility": 6},
+    {"course_id": "COURSE_04", "utility": 6}
+  ],
+  "budget": 105,
+  "min_bid": 5
+}

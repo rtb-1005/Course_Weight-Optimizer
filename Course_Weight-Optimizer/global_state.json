@@ -1,0 +1,13 @@
+{
+  "grade_size": 126,
+  "courses": [
+    {"course_id": "COURSE_01", "capacity": 30,  "bidders": 35},
+    {"course_id": "COURSE_02", "capacity": 30,  "bidders": 30},
+    {"course_id": "COURSE_03", "capacity": 30,  "bidders": 19},
+    {"course_id": "COURSE_04", "capacity": 30,  "bidders": 31},
+    {"course_id": "COURSE_05", "capacity": 30,  "bidders": 35},
+    {"course_id": "COURSE_06", "capacity": 30,  "bidders": 31},
+    {"course_id": "COURSE_07", "capacity": 153, "bidders": 58},
+    {"course_id": "COURSE_08", "capacity": 30,  "bidders": 58}
+  ]
+}
