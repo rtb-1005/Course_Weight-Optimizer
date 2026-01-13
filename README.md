@@ -197,11 +197,7 @@ $$
 有了代理成功率，就可以定义期望效用。设 $u_j$ 表示你对课程 $j$ 的效用/重要性（例如高优先级课更大），则情景 $t$ 下你的期望效用写为：
 
 $$
-\mathcal{U}^{(t)}(\mathbf{b})
-=
-\sum_{j\in J_{\text{COMP}}} u_j\,\pi_j^{(t)}(b_j)
-+
-\sum_{j\in J_{\text{SAFE}}} u_j\cdot 1,
+\mathcal{U}^{(t)}(\mathbf{b}) = \sum_{j\in J_{\text{COMP}}} u_j\,\pi_j^{(t)}(b_j) + \sum_{j\in J_{\text{SAFE}}} u_j\cdot 1,
 $$
 
 其中 $J_{\text{SAFE}}$ 为鲁棒未满员课程集合（入场券即成功），$J_{\text{COMP}}$ 为竞争性课程集合。实现上，程序通常用“中性情景”生成可执行投标向量 $\mathbf{b}$，并用三档情景输出成功率区间以呈现稳健性：
@@ -245,3 +241,4 @@ $$
 > *完整引用见 `ref.bib`
 
 最后，祝各位顺利选择心仪的课程！！
+
