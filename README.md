@@ -221,7 +221,7 @@ $$
 在上述代理概率与线性效用结构下，KKT 条件会导出“水位”式的闭式结构：存在拉格朗日乘子 $\nu>0$ 使得
 
 $$
-b_j^{*} = b_{\min}+\max\Big\{0,\;(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}}, \quad j\in S,
+b_j^{*} = b_{\min}+\max\{0,\;(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}}, \quad j\in S,
 $$
 
 其中 $\alpha_j$（通常取中性情景 $\alpha_j^{(\text{neutral})}$）代表门槛尺度。程序通过对 $\nu$ 做一维二分搜索，使 $\sum_{j\in S} b_j^{*}=W'$ 成立。该结构的含义是：效用更大且门槛更“划算”的课程获得更多预算；当某课程的边际收益过低时，其最优解会退化为仅投入场券甚至不进入（由外层“是否进入该课”的枚举决定）。
@@ -238,6 +238,7 @@ $$
 > *完整引用见 `ref.bib`
 
 最后，祝各位顺利选择心仪的课程！！
+
 
 
 
