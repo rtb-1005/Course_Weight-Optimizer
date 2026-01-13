@@ -234,10 +234,7 @@ $$
 The KKT conditions yield a water-filling form: there exists $\nu>0$ such that
 
 $$
-b_j^{*}
-=
-b_{\min}+\max\Big\{0,\;(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}\Big\},
-\quad j\in S,
+b_j^{*} = b_{\min}+\max\{0,\;(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}\}, \quad j\in S,
 $$
 
 with $\nu$ determined by a one-dimensional binary search so that $\sum_{j\in S} b_j^{*}=W'$. Courses with low marginal benefit receive only the minimum bid or are excluded entirely.
@@ -253,4 +250,5 @@ In summary, this project combines insights from mechanism design and contest gam
 > *Full bibliographic entries are provided in `ref.bib`.*
 
 Finally, best wishes to everyone in selecting their desired courses!
+
 
