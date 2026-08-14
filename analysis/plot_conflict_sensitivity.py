@@ -13,6 +13,7 @@ from __future__ import annotations
 import itertools
 import random
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean, stdev
 from typing import Dict, Iterable, List, Sequence, Tuple
@@ -328,7 +329,15 @@ def draw():
     output_dir = ROOT / "figures"
     output_dir.mkdir(exist_ok=True)
     fig.savefig(output_dir / "conflict_sensitivity.png", dpi=300, facecolor="white")
-    fig.savefig(output_dir / "conflict_sensitivity.pdf", facecolor="white")
+    fig.savefig(
+        output_dir / "conflict_sensitivity.pdf",
+        facecolor="white",
+        metadata={
+            "Creator": "Course Weight Optimizer conflict sensitivity analysis",
+            "Title": "Course conflict sensitivity analysis",
+            "CreationDate": datetime(2020, 1, 1, tzinfo=timezone.utc),
+        },
+    )
     plt.close(fig)
 
     print(f"baseline_proxy_utility={baseline[1]:.4f}")
