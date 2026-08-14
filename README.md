@@ -2,11 +2,11 @@
 
 ## Agent 快速部署
 
-本仓库包含面向 coding agent 的 [`AGENTS.md`](AGENTS.md)。把仓库目录路径交给 Codex、Claude Code、Cursor 等 agent，并让它先读取 `AGENTS.md`，即可按其中的步骤在本地创建环境、检查示例数据并运行程序。
+本仓库包含面向 coding agent 的 [`AGENTS.md`](AGENTS.md)。把仓库链接和目录路径交给 Codex、Claude Code、Cursor 等 agent，并让它先读取 `AGENTS.md`，Agent 就会用自然语言向学生采集信息、读取选课截图、生成并校验 JSON，再在本地运行程序；学生不需要自己编辑 JSON。
 
 可直接复制这句提示词：
 
-> 请把 `<仓库目录路径>` 作为工作目录，先读取 `AGENTS.md` 和 `README.md`，按指引在我电脑上完成初始化并运行示例；运行成功后告诉我执行的命令、Python 版本和输出位置。如果需要我的课程数据，再列出所需 JSON 字段。不要覆盖我的输入文件。
+> 请使用仓库 https://github.com/rtb-1005/Course_Weight-Optimizer 作为工作目录，先读取 `AGENTS.md` 和 `README.md`；我可以用自然语言回答问题或发送选课页面截图，不要让我编辑 JSON。请先用简单中文介绍规则，再从截图或我的回答中提取年级人数、课程容量、当前参与人数并逐项确认，询问我的必选/备选课程、1–10 分意愿评分、希望拿到几门和风险偏好，由你计算建议投权；展示写入前摘要，得到确认后再生成或更新 JSON、校验并运行程序，最后报告命令、Python 版本和运行结果，不要擅自覆盖已有数据。
 
 ## 背景与用途
 
