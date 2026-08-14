@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 from utils import load_desired_courses, load_global_state
-from typing import List
 
 
 # =========================
@@ -33,10 +33,15 @@ DELTA = 0.05
 S_MULTS = [0.8, 1, 1.6]           # 保守/中性/激进
 DESIGN_INDEX = 1                    # 用中性档做投标向量
 
-# 枚举进入多少门课（竞争性课程部分）
-K_CANDIDATES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 21]
-
 BISect_ITERS = 80
+
+
+@dataclass
+class AllocationResult:
+    selected_ids: List[str]
+    safe_selected: List[str]
+    competitive_selected: List[str]
+    final_bids: Dict[str, float]
 
 
 def clamp(x: float, lo: float, hi: float) -> float:
@@ -165,6 +170,108 @@ def waterfill_allocate(
 
 def proxy_prob(b: float, alpha: float) -> float:
     return 1.0 - math.exp(-b / (alpha + EPS))
+
+
+def _conflict_set(conflicts: Iterable[Tuple[str, str]]) -> Set[frozenset[str]]:
+    return {frozenset((left, right)) for left, right in conflicts}
+
+
+def is_conflict_free(course_ids: Iterable[str], conflicts: Iterable[Tuple[str, str]]) -> bool:
+    selected = list(course_ids)
+    known_conflicts = _conflict_set(conflicts)
+    for i, left in enumerate(selected):
+        for right in selected[i + 1:]:
+            if frozenset((left, right)) in known_conflicts:
+                return False
+    return True
+
+
+def iter_conflict_free_subsets(
+    course_ids: Iterable[str],
+    conflicts: Iterable[Tuple[str, str]],
+    max_size: int,
+) -> Iterable[Tuple[str, ...]]:
+    """Yield non-empty conflict-free subsets up to max_size."""
+    ids = list(course_ids)
+    known_conflicts = _conflict_set(conflicts)
+
+    def walk(start: int, selected: List[str]) -> Iterable[Tuple[str, ...]]:
+        if selected:
+            yield tuple(selected)
+        if len(selected) >= max_size:
+            return
+        for index in range(start, len(ids)):
+            cid = ids[index]
+            if any(frozenset((cid, other)) in known_conflicts for other in selected):
+                continue
+            selected.append(cid)
+            yield from walk(index + 1, selected)
+            selected.pop()
+
+    yield from walk(0, [])
+
+
+def select_allocation(
+    desired_ids: List[str],
+    utilities: Dict[str, float],
+    robust_safe: List[str],
+    competitive: List[str],
+    alphas_design: Dict[str, float],
+    conflicts: Iterable[Tuple[str, str]],
+) -> AllocationResult:
+    """Choose a conflict-free course set, then water-fill its competitive bids."""
+    safe_ids = set(robust_safe)
+    competitive_ids = set(competitive)
+    max_selected = min(int(BUDGET // MIN_BID), len(desired_ids))
+
+    best_total = -1e100
+    best_subset: Tuple[str, ...] = tuple()
+    best_safe: List[str] = []
+    best_competitive: List[str] = []
+    best_bids: Dict[str, float] = {}
+
+    for subset in iter_conflict_free_subsets(desired_ids, conflicts, max_selected):
+        safe_selected = [cid for cid in subset if cid in safe_ids]
+        competitive_selected = [cid for cid in subset if cid in competitive_ids]
+        budget_rem = BUDGET - MIN_BID * len(safe_selected)
+
+        if budget_rem < MIN_BID * len(competitive_selected) - 1e-12:
+            continue
+
+        comp_bids: Dict[str, float] = {}
+        comp_obj = 0.0
+        if competitive_selected:
+            comp_bids = waterfill_allocate(
+                competitive_selected,
+                utilities,
+                alphas_design,
+                budget_rem,
+                MIN_BID,
+            )
+            comp_obj = sum(
+                utilities[cid] * proxy_prob(comp_bids[cid], alphas_design[cid])
+                for cid in competitive_selected
+            )
+
+        total_obj = sum(utilities[cid] for cid in safe_selected) + comp_obj
+        if total_obj > best_total + 1e-12:
+            best_total = total_obj
+            best_subset = subset
+            best_safe = safe_selected
+            best_competitive = competitive_selected
+            best_bids = comp_bids
+
+    final_bids = {cid: 0.0 for cid in desired_ids}
+    for cid in best_safe:
+        final_bids[cid] = MIN_BID
+    final_bids.update(best_bids)
+
+    return AllocationResult(
+        selected_ids=list(best_subset),
+        safe_selected=best_safe,
+        competitive_selected=best_competitive,
+        final_bids=final_bids,
+    )
 
 def _wcswidth_fallback(s: str, ambiguous_as_wide: bool = False) -> int:
     """
@@ -296,84 +403,28 @@ def main() -> int:
         else:
             competitive.append(cid)
 
-    # 鲁棒不满课：入场券即“确定收益”，但要考虑预算占用 => 枚举选多少门
-    robust_safe.sort(key=lambda x: utilities[x], reverse=True)
-
-
-    def eval_competitive(budget_rem: float) -> Tuple[float, List[str], Dict[str, float]]:
-        """在竞争性课程上，用 DESIGN 情景求最优入场集合与投标，返回 (obj, subset, bids)."""
-        if budget_rem < MIN_BID - 1e-12:
-            return 0.0, [], {}
-        if not competitive:
-            return 0.0, [], {}
-
-        # 只对竞争性课程计算 alphas（DESIGN 情景）
-        alphas_design = {cid: alphas_list[DESIGN_INDEX][cid] for cid in competitive}
-        utilities_comp = {cid: utilities[cid] for cid in competitive}
-
-        # 先按“入场券收益”排序再枚举 K
-        base = []
-        for cid in competitive:
-            a = alphas_design[cid]
-            p0 = proxy_prob(MIN_BID, a)
-            base.append((utilities_comp[cid] * p0, cid))
-        base.sort(reverse=True)
-
-        max_k_feasible = int(budget_rem // MIN_BID)
-        max_k_feasible = min(max_k_feasible, len(competitive))
-
-        best_obj = -1e100
-        best_subset: List[str] = []
-        best_bids: Dict[str, float] = {}
-
-        for k in K_CANDIDATES:
-            k2 = min(k, max_k_feasible)
-            if k2 <= 0:
-                continue
-            subset = [cid for _, cid in base[:k2]]
-            bids = waterfill_allocate(subset, utilities_comp, alphas_design, budget_rem, MIN_BID)
-            probs = {cid: proxy_prob(bids[cid], alphas_design[cid]) for cid in subset}
-            obj = sum(utilities_comp[cid] * probs.get(cid, 0.0) for cid in subset)
-            if obj > best_obj:
-                best_obj = obj
-                best_subset = subset
-                best_bids = bids
-
-        if best_obj < 0:
-            best_obj = 0.0
-        return best_obj, best_subset, best_bids
-
-    # 枚举选择 t 门鲁棒不满课（每门成本=5，收益=utility），其余预算给竞争性课程
-    best_total = -1e100
-    best_t = 0
-    best_comp_subset: List[str] = []
-    best_comp_bids: Dict[str, float] = {}
-
-    max_safe_feasible = int(BUDGET // MIN_BID)
-    max_safe_feasible = min(max_safe_feasible, len(robust_safe))
-
-    safe_prefix_sum = [0.0]
-    for cid in robust_safe:
-        safe_prefix_sum.append(safe_prefix_sum[-1] + utilities[cid])
-
-    for t in range(0, max_safe_feasible + 1):
-        budget_rem = BUDGET - MIN_BID * t
-        comp_obj, comp_subset, comp_bids = eval_competitive(budget_rem)
-        total_obj = safe_prefix_sum[t] + comp_obj
-        if total_obj > best_total:
-            best_total = total_obj
-            best_t = t
-            best_comp_subset = comp_subset
-            best_comp_bids = comp_bids
-
-    safe_selected = robust_safe[:best_t]
-
-    # 汇总最终 bids（未入场的为0）
-    final_bids: Dict[str, float] = {cid: 0.0 for cid in desired_ids}
-    for cid in safe_selected:
-        final_bids[cid] = MIN_BID
-    for cid, b in best_comp_bids.items():
-        final_bids[cid] = b
+    # 对所有冲突可行的课程组合进行选择，再在竞争性课程上水位分配。
+    # 不能只对 utility 排名前缀枚举，因为高效用课程可能与多门课冲突。
+    alphas_design = {cid: alphas_list[DESIGN_INDEX][cid] for cid in competitive}
+    allocation = select_allocation(
+        desired_ids=desired_ids,
+        utilities=utilities,
+        robust_safe=robust_safe,
+        competitive=competitive,
+        alphas_design=alphas_design,
+        conflicts=global_state.conflicts,
+    )
+    safe_selected = allocation.safe_selected
+    best_comp_subset = allocation.competitive_selected
+    final_bids = allocation.final_bids
+    selected_ids = set(allocation.selected_ids)
+    known_conflicts = _conflict_set(global_state.conflicts)
+    blocked_by_conflict = [
+        cid
+        for cid in desired_ids
+        if cid not in selected_ids
+        and any(frozenset((cid, selected)) in known_conflicts for selected in selected_ids)
+    ]
 
     # 输出：对 safe_selected 概率=1；对竞争性用三情景区间
     print("========== Allocation Result ==========")
@@ -383,6 +434,10 @@ def main() -> int:
     print(f"M = sum bidders over ALL courses = {M:.1f}")
     print(f"s_bar = M/P = {s_bar_raw:.4f} (clamped to {s_bar:.4f}, KMAX={KMAX:.2f})")
     print(f"Budget W = {BUDGET:.2f}, MinBid = {MIN_BID:.2f}")
+    print(f"Conflict pairs loaded = {len(global_state.conflicts)}")
+    if global_state.conflicts:
+        for left, right in global_state.conflicts:
+            print(f"  - conflict: {left} x {right}")
     print("")
     tags = ["conservative", "neutral", "aggressive"]
     print("Scenarios (s, mu=W/s):")
@@ -391,10 +446,11 @@ def main() -> int:
     print("")
     print(f"Robust-underfull courses selected = {len(safe_selected)} (bid=MIN_BID, prob=1)")
     print(f"Competitive courses selected       = {len(best_comp_subset)}")
+    if blocked_by_conflict:
+        print(f"Courses excluded by selected conflicts = {', '.join(blocked_by_conflict)}")
     print("")
 
-    # 统一打印（按 bid 降序）
-        # ---- 统一打印（按 bid 降序），概率拆列 + 增加 tag ----
+    # 统一打印（按 bid 降序），概率拆列 + 增加冲突原因
     table_rows: List[List[str]] = []
 
     for cid in desired_ids:
@@ -409,14 +465,17 @@ def main() -> int:
         if bid <= 0.0:
             tag = "OUT"
             p0 = p1 = p2 = 0.0
+            reason = "conflict" if cid in blocked_by_conflict else "not selected"
         elif cid in safe_selected:
             tag = "SAFE"
             p0 = p1 = p2 = 1.0
+            reason = "-"
         else:
             tag = "COMP"
             p0 = proxy_prob(bid, alphas_list[0][cid])
             p1 = proxy_prob(bid, alphas_list[1][cid])
             p2 = proxy_prob(bid, alphas_list[2][cid])
+            reason = "-"
 
         table_rows.append([
             cid,
@@ -429,15 +488,16 @@ def main() -> int:
             f"{p1:.3f}",
             f"{p2:.3f}",
             tag,
+            reason,
         ])
 
     # 按 bid 降序，其次按 utility 降序
     table_rows.sort(key=lambda r: (float(r[1]), float(r[2])), reverse=True)
 
     print_table(
-        headers=["course_id", "bid", "utility", "cap", "bidders_now", "pred[min..max]", "p(con)", "p(neu)", "p(agg)", "tag"],
+        headers=["course_id", "bid", "utility", "cap", "bidders_now", "pred[min..max]", "p(con)", "p(neu)", "p(agg)", "tag", "reason"],
         rows=table_rows,
-        aligns=["L", "R", "R", "R", "R", "R", "R", "R", "R", "R"],
+        aligns=["L", "R", "R", "R", "R", "R", "R", "R", "R", "L", "L"],
     )
 
 

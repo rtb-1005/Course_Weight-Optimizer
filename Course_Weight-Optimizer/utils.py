@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List
 
@@ -29,6 +29,7 @@ class CourseState:
 class GlobalState:
     grade_size: int                # P
     courses: Dict[str, CourseState]
+    conflicts: List[tuple[str, str]] = field(default_factory=list)
 
 
 def load_desired_courses(json_path: str) -> DesiredCourses:
@@ -62,4 +63,21 @@ def load_global_state(json_path: str) -> GlobalState:
     if not courses:
         raise ValueError("global_state.json 'courses' is empty.")
 
-    return GlobalState(grade_size=grade_size, courses=courses)
+    conflicts: List[tuple[str, str]] = []
+    seen_conflicts = set()
+    for index, raw_pair in enumerate(data.get("conflicts", [])):
+        if not isinstance(raw_pair, list) or len(raw_pair) != 2:
+            raise ValueError(f"conflicts[{index}] must be a two-item list of course IDs.")
+        left, right = (str(raw_pair[0]), str(raw_pair[1]))
+        if left == right:
+            raise ValueError(f"conflicts[{index}] cannot contain the same course twice.")
+        if left not in courses or right not in courses:
+            raise ValueError(
+                f"conflicts[{index}] references an unknown course: {left}, {right}."
+            )
+        pair = tuple(sorted((left, right)))
+        if pair not in seen_conflicts:
+            conflicts.append(pair)
+            seen_conflicts.add(pair)
+
+    return GlobalState(grade_size=grade_size, courses=courses, conflicts=conflicts)
