@@ -2,30 +2,19 @@
 
 这份文件是给 Codex、Claude Code、Cursor 等 coding agent 读取的项目说明。用户只需要把仓库目录路径交给 agent，并要求读取本文件，agent 就应当能够完成本地初始化、信息采集、配置生成和运行。Agent 在这里不仅是执行器，也是学生与程序之间的“传话筒”：学生用自然语言回答问题或发送选课页面截图，不需要自己编辑 JSON。
 
+## 北极星条款（最高优先级）
+
+以下指令对本仓库的所有 Agent 行为全局生效；如果其他说明与它冲突，以本条款为准：
+
+> 请使用仓库 https://github.com/rtb-1005/Course_Weight-Optimizer 作为工作目录，先读取 AGENTS.md 和 README.md；我可以用自然语言回答问题或发送选课页面截图，不要让我编辑 JSON。请先用简单中文介绍规则，再从截图或我的回答中提取年级人数、课程容量、当前参与人数并逐项确认；主动询问哪些课程不能同时选、冲突是硬性还是有条件的，再询问我的必选/备选课程、1–10 分意愿评分、希望拿到几门和风险偏好，由你计算建议投权；展示写入前摘要，得到确认后再生成或更新 JSON、校验并运行程序，最后报告命令、Python 版本和运行结果，不要擅自覆盖已有数据。
+
 ## 项目目标
 
 这是一个东北大学投权选课的本地 Python 命令行工具。它根据课程偏好和全局选课快照，输出建议投权向量以及保守、中性、激进三种情景下的代理录取概率。代理概率用于比较策略，不是真实录取承诺。
 
-## 在用户电脑上部署
+## 部署
 
-1. 将工作目录切换到仓库根目录（包含本文件的目录）。
-2. 确认 Python 3.9 或更高版本：`python3 --version`。
-3. 创建并使用隔离环境（如果用户已有项目环境，可以沿用）：
-
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate       # Windows: .venv\Scripts\activate
-   ```
-
-4. 本项目没有必需的第三方依赖；直接使用标准库即可。若希望表格在终端中更好地显示，可选安装 `wcwidth`：`python -m pip install wcwidth`。
-5. 程序入口位于 `Course_Weight-Optimizer/main.py`。运行前切换到该目录，因为输入 JSON 使用相对路径：
-
-   ```bash
-   cd Course_Weight-Optimizer
-   python main.py
-   ```
-
-6. 首次运行先使用仓库内的示例 `desired_courses.json` 和 `global_state.json` 验证环境，再询问用户是否要替换成自己的数据。不要擅自覆盖用户的 JSON 文件。
+执行 `git clone https://github.com/rtb-1005/Course_Weight-Optimizer.git`（已有本地仓库则执行 `git pull`），然后把仓库根目录交给 Agent；其余初始化、信息采集、JSON 生成和运行全部遵循上面的北极星条款。
 
 ## 核心模式：Agent 作为信息中间人
 
