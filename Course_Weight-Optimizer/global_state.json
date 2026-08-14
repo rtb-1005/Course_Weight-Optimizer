@@ -9,5 +9,6 @@
     {"course_id": "COURSE_06", "capacity": 30,  "bidders": 31},
     {"course_id": "COURSE_07", "capacity": 153, "bidders": 58},
     {"course_id": "COURSE_08", "capacity": 30,  "bidders": 58}
-  ]
+  ],
+  "conflicts": []
 }
