@@ -226,7 +226,7 @@ $$
 当我们固定进入的竞争性课程集合 $S\subseteq J_{\text{COMP}}$ 后，扣除 SAFE 课程的入场券成本，竞争性课程可用预算为：
 
 $$
-W' \triangleq W - |J_{\text{SAFE}}|\,b_{\min},
+W' \triangleq W - |J_{\text{SAFE}}|\thinspace b_{\min},
 \qquad 
 \sum_{j\in S} b_j = W',
 \qquad b_j\ge b_{\min}.
@@ -235,7 +235,7 @@ $$
 在上述代理概率与线性效用结构下，KKT 条件会导出“水位”式的闭式结构：存在拉格朗日乘子 $\nu>0$ 使得
 
 $$
-b_j^{*} = b_{\min}+\max\left\{0,\;(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}\right\}, \quad j\in S,
+b_j^{*} = b_{\min}+\max\left\lbrace 0,\thickspace(\alpha_j+\varepsilon)\ln\frac{u_j}{\nu(\alpha_j+\varepsilon)}-b_{\min}\right\rbrace, \quad j\in S,
 $$
 
 其中 $\alpha_j$（通常取中性情景 $\alpha_j^{(\text{neutral})}$）代表门槛尺度。程序通过对 $\nu$ 做一维二分搜索，使 $\sum_{j\in S} b_j^{*}=W'$ 成立。该结构的含义是：效用更大且门槛更“划算”的课程获得更多预算；当某课程的边际收益过低时，其最优解会退化为仅投入场券甚至不进入（由外层“是否进入该课”的枚举决定）。
@@ -273,7 +273,7 @@ $$
 如果一组课程 $H$ 中最多只能选一门，Agent 会将这组课程中的每一对都标记为冲突：
 
 $$
-E_H = \left\{(j_a,j_b)\mid 1\leq a<b\leq q\right\}.
+E_H = \left\lbrace(j_a,j_b)\mid 1\leq a<b\leq q\right\rbrace.
 $$
 
 条件冲突在确认前只保留在对话草稿中，不进入 `conflicts`，以免把可调整的课程误判成绝对不可行。
@@ -283,7 +283,7 @@ $$
 把目标课程看成无向冲突图 $G=(J,E)$：课程是顶点，若课程 $i$ 与课程 $j$ 不能同时选择，则课程对 $(i,j)$ 属于 $E$。定义二元变量 $x_j$ 表示是否进入课程 $j$：
 
 $$
-x_j\in\{0,1\},
+x_j\in\lbrace 0,1\rbrace,
 \qquad
 b_j=0\ \text{if }x_j=0,
 \qquad
@@ -301,20 +301,20 @@ $$
 
 $$
 \mathcal{I}(G) =
-\left\{S\subseteq J\mid \text{for every }(i,j)\in E,\ \neg(i\in S\land j\in S)\right\}.
+\left\lbrace S\subseteq J\mid \text{for every }(i,j)\in E,\ \neg(i\in S\land j\in S)\right\rbrace.
 $$
 
 对任意可行集合 $S\in\mathcal{I}(G)$，先为其中的 SAFE 课程支付入场券，再把剩余预算分配给竞争性课程。新的外层优化目标为：
 
 $$
 S^* =
-\operatorname*{arg\,max}_{S\in\mathcal{I}(G),\;|S|b_{\min}\leq W}
+\operatorname*{arg\thinspace max}_{S\in\mathcal{I}(G),\thickspace|S|b_{\min}\leq W}
 \left[
 \sum_{j\in S\cap J_{\mathrm{SAFE}}}u_j
 +
 \max_{\mathbf b}
 \sum_{j\in S\cap J_{\mathrm{COMP}}}
-u_j\,\pi_j^{(\mathrm{neutral})}(b_j)
+u_j\thinspace\pi_j^{(\mathrm{neutral})}(b_j)
 \right],
 $$
 
@@ -369,7 +369,7 @@ $$
 
 为了避免结论依赖仓库里的五门课示例，分析脚本另外生成了 n = 3、5、8、10、12 门候选课的合成场景。每个 n 使用 8 个随机种子；每个种子在三种冲突密度 p = 5%、10%、20% 下生成 40 张冲突图，因此每个 (n, p) 组合包含 320 次模拟，共 4,800 张冲突图。
 
-合成课程的效用从 $[1,10]$ 抽样，容量从 $\{20,25,30,35,40\}$ 抽样，当前参与人数位于容量的 $1.05$ 至 $2.1$ 倍之间。每张图都重新求解最优冲突可行集合，并在该集合上执行水位式投权。表中效用为当前代理模型的中性情景效用，不是真实录取概率。
+合成课程的效用从 $[1,10]$ 抽样，容量从 $\lbrace 20,25,30,35,40\rbrace$ 抽样，当前参与人数位于容量的 $1.05$ 至 $2.1$ 倍之间。每张图都重新求解最优冲突可行集合，并在该集合上执行水位式投权。表中效用为当前代理模型的中性情景效用，不是真实录取概率。
 
 | 候选课程数 $n$ | 旧方案不可行率（$p=10\%$） | 保留代理效用 | 平均最终课程数 |
 | -------------: | -------------------------: | -----------: | -------------: |
